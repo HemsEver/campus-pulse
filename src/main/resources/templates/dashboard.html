@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campus Pulse | Dashboard</title>
+    <link rel="stylesheet" href="/css/campus-pulse.css">
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">CP</span><span>Campus Pulse</span></div>
+        <p class="eyebrow">Student command center</p>
+        <nav>
+            <a class="active" href="/dashboard">Dashboard</a>
+            <a href="/students">Students</a>
+            <a href="/events">Events</a>
+            <a href="/announcements">Announcements</a>
+            <a href="/mentorship">Mentorship</a>
+            <a href="/messages">Messages</a>
+            <a href="/routing">Smart Routing Hub</a>
+            <a href="/assistant">Student Assistant</a>
+        </nav>
+        <div class="sidebar-note"><strong>Connected campus</strong><span>One place for the questions between classes.</span></div>
+    </aside>
+    <main class="content">
+        <header class="topbar"><div><p class="eyebrow" th:text="${todayLabel}">Wednesday, September 16, 2026</p><h1 th:text="${greetingText}">Good morning, campus.</h1></div><a class="button button-dark" href="/assistant">Ask the assistant <span>→</span></a></header>
+        <div id="dashboardAlertBanner" class="dashboard-alert-banner" aria-live="polite"></div>
+        <section class="hero"><div><p class="eyebrow accent">Today at a glance</p><h2>Find your next move.</h2><p>Campus Pulse brings the people, events, notices, and services you need into one calm workspace.</p></div><div class="hero-orbit"><span>✦</span><span>↗</span><span>◎</span></div></section>
+        <section class="stats-grid">
+            <article class="stat-card"><span class="stat-icon orange">◷</span><div><strong th:text="${studentCount}">0</strong><span>Students connected</span></div><a href="/students">View directory →</a></article>
+            <article class="stat-card"><span class="stat-icon blue">◷</span><div><strong th:text="${#lists.size(upcomingEvents)}">0</strong><span>Upcoming events</span></div><a href="/events">View calendar →</a></article>
+            <article class="stat-card"><span class="stat-icon blue">!</span><div><strong th:text="${#lists.size(importantAnnouncements)}">0</strong><span>Important notices</span></div><a href="/announcements">Read updates →</a></article>
+            <article class="stat-card"><span class="stat-icon green">✦</span><div><strong th:text="${mentorCount}">0</strong><span>Faculty mentors</span></div><a href="/mentorship">Find guidance →</a></article>
+            <article class="stat-card"><span class="stat-icon purple">✉</span><div><strong th:text="${pendingMessages}">0</strong><span>Pending messages</span></div><a href="/messages">Open inbox →</a></article>
+        </section>
+        <section class="content-grid">
+            <article class="panel"><div class="panel-heading"><div><p class="eyebrow">Next up</p><h3>Upcoming events</h3></div><a href="/events">See all →</a></div><div class="list" th:if="${!upcomingEvents.isEmpty()}" th:each="event : ${upcomingEvents}"><div class="date-tile"><span th:text="${#temporals.format(event.eventDate, 'MMM')}">SEP</span><strong th:text="${#temporals.format(event.eventDate, 'dd')}">16</strong></div><div><strong th:text="${event.title}">Event title</strong><span th:text="${event.venue + ' · ' + event.category}">Venue</span></div></div><div class="empty" th:if="${upcomingEvents.isEmpty()}">No upcoming events yet. Add the first event through <a href="/api/events">the API</a>.</div></article>
+            <article class="panel dark-panel"><div class="panel-heading"><div><p class="eyebrow">Need a hand?</p><h3>Smart Routing Hub</h3></div><span class="live-dot">Live</span></div><p class="panel-copy">Tell us what is blocking your day. We will point you to the right campus service.</p><a class="button button-light" href="/routing">Route a question <span>↗</span></a><div class="quick-queries"><span>Exam timetable</span><span>Join a coding event</span><span>Find a Java mentor</span></div></article>
+        </section>
+    </main>
+</div>
+<script>
+    async function loadActiveAlerts() {
+        const banner = document.getElementById('dashboardAlertBanner');
+        try {
+            const response = await fetch('/api/announcements/active');
+            if (!response.ok) throw new Error('Unable to load alerts');
+            const alerts = await response.json();
+
+            if (!alerts || alerts.length === 0) {
+                banner.innerHTML = '<div class="alert-item neutral">No active announcements right now.</div>';
+                return;
+            }
+
+            banner.innerHTML = alerts.slice(0, 3).map(alert => `
+                <div class="alert-item ${ (alert.priority || 'MEDIUM').toLowerCase() }">
+                    <strong>${alert.title || 'Campus update'}</strong>
+                    <span>${alert.description || ''}</span>
+                </div>
+            `).join('');
+        } catch (error) {
+            banner.innerHTML = '<div class="alert-item neutral">Live alerts are unavailable right now.</div>';
+        }
+    }
+
+    loadActiveAlerts();
+</script>
+</body>
+</html>

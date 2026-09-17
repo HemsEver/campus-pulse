@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campus Pulse | Messages</title>
+    <link rel="stylesheet" href="/css/campus-pulse.css">
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">CP</span><span>Campus Pulse</span></div>
+        <p class="eyebrow">Student command center</p>
+        <nav>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/students">Students</a>
+            <a href="/events">Events</a>
+            <a href="/announcements">Announcements</a>
+            <a href="/mentorship">Mentorship</a>
+            <a class="active" href="/messages">Messages</a>
+            <a href="/routing">Smart Routing Hub</a>
+            <a href="/assistant">Student Assistant</a>
+        </nav>
+    </aside>
+    <main class="content narrow students-page">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow" th:text="${todayLabel}">Wednesday, September 16, 2026</p>
+                <h1>Messages</h1>
+            </div>
+            <a class="button button-dark" href="/dashboard">← Dashboard</a>
+        </header>
+
+        <section class="feature-panel student-panel">
+            <div class="student-toolbar">
+                <div>
+                    <p class="eyebrow accent">Inbox</p>
+                    <h2>Campus communications</h2>
+                </div>
+                <div class="actions">
+                    <button class="button button-light" type="button" id="refreshMessages">Refresh</button>
+                    <a class="button button-dark" href="/api/messages" target="_blank" rel="noopener">Open API <span>↗</span></a>
+                </div>
+            </div>
+            <div class="student-table-wrap">
+                <table class="students-table">
+                    <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Sender</th>
+                        <th>Receiver</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                    </tr>
+                    </thead>
+                    <tbody id="messagesTableBody">
+                        <tr><td colspan="5" class="empty-state">Loading messages…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+<script>
+    async function loadMessages() {
+        const body = document.getElementById('messagesTableBody');
+        try {
+            const response = await fetch('/api/messages');
+            if (!response.ok) throw new Error('Request failed');
+            const messages = await response.json();
+            if (!messages || messages.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="empty-state">No messages found.</td></tr>';
+                return;
+            }
+            body.innerHTML = messages.map(message => `
+                <tr>
+                    <td><strong>${message.subject || 'No subject'}</strong></td>
+                    <td>${message.sender || '—'}</td>
+                    <td>${message.receiver || '—'}</td>
+                    <td>${message.status || 'Unread'}</td>
+                    <td>${message.timestamp ? new Date(message.timestamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            body.innerHTML = '<tr><td colspan="5" class="empty-state">Unable to load messages right now.</td></tr>';
+        }
+    }
+    document.getElementById('refreshMessages').addEventListener('click', loadMessages);
+    loadMessages();
+</script>
+</body>
+</html>

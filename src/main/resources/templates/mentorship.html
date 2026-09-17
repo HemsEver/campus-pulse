@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campus Pulse | Mentorship</title>
+    <link rel="stylesheet" href="/css/campus-pulse.css">
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">CP</span><span>Campus Pulse</span></div>
+        <p class="eyebrow">Student command center</p>
+        <nav>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/students">Students</a>
+            <a href="/events">Events</a>
+            <a href="/announcements">Announcements</a>
+            <a class="active" href="/mentorship">Mentorship</a>
+            <a href="/messages">Messages</a>
+            <a href="/routing">Smart Routing Hub</a>
+            <a href="/assistant">Student Assistant</a>
+        </nav>
+    </aside>
+    <main class="content narrow students-page">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow" th:text="${todayLabel}">Wednesday, September 16, 2026</p>
+                <h1>Mentorship</h1>
+            </div>
+            <a class="button button-dark" href="/dashboard">← Dashboard</a>
+        </header>
+
+        <section class="feature-panel student-panel">
+            <div class="student-toolbar">
+                <div>
+                    <p class="eyebrow accent">Faculty guidance</p>
+                    <h2>Available mentors</h2>
+                </div>
+                <div class="actions">
+                    <button class="button button-light" type="button" id="refreshMentors">Refresh</button>
+                    <a class="button button-dark" href="/api/mentors" target="_blank" rel="noopener">Open API <span>↗</span></a>
+                </div>
+            </div>
+            <div class="student-table-wrap">
+                <table class="students-table">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Expertise</th>
+                        <th>Availability</th>
+                        <th>Request Status</th>
+                    </tr>
+                    </thead>
+                    <tbody id="mentorsTableBody">
+                        <tr><td colspan="5" class="empty-state">Loading mentors…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+<script>
+    async function loadMentors() {
+        const body = document.getElementById('mentorsTableBody');
+        try {
+            const response = await fetch('/api/mentors');
+            if (!response.ok) throw new Error('Request failed');
+            const mentors = await response.json();
+            if (!mentors || mentors.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="empty-state">No mentors found.</td></tr>';
+                return;
+            }
+            body.innerHTML = mentors.map(mentor => `
+                <tr>
+                    <td><strong>${mentor.name || 'Unknown mentor'}</strong></td>
+                    <td>${mentor.department || '—'}</td>
+                    <td>${mentor.expertise || '—'}</td>
+                    <td>${mentor.availability || '—'}</td>
+                    <td>${mentor.requestStatus || 'Open'}</td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            body.innerHTML = '<tr><td colspan="5" class="empty-state">Unable to load mentors right now.</td></tr>';
+        }
+    }
+    document.getElementById('refreshMentors').addEventListener('click', loadMentors);
+    loadMentors();
+</script>
+</body>
+</html>

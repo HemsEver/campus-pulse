@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campus Pulse | Events</title>
+    <link rel="stylesheet" href="/css/campus-pulse.css">
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">CP</span><span>Campus Pulse</span></div>
+        <p class="eyebrow">Student command center</p>
+        <nav>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/students">Students</a>
+            <a class="active" href="/events">Events</a>
+            <a href="/announcements">Announcements</a>
+            <a href="/mentorship">Mentorship</a>
+            <a href="/messages">Messages</a>
+            <a href="/routing">Smart Routing Hub</a>
+            <a href="/assistant">Student Assistant</a>
+        </nav>
+    </aside>
+    <main class="content narrow students-page">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow" th:text="${todayLabel}">Wednesday, September 16, 2026</p>
+                <h1>Events Calendar</h1>
+            </div>
+            <a class="button button-dark" href="/dashboard">← Dashboard</a>
+        </header>
+
+        <section class="feature-panel student-panel">
+            <div class="student-toolbar">
+                <div>
+                    <p class="eyebrow accent">Campus schedule</p>
+                    <h2>Upcoming events</h2>
+                </div>
+                <div class="actions">
+                    <button class="button button-light" type="button" id="refreshEvents">Refresh</button>
+                    <a class="button button-dark" href="/api/events" target="_blank" rel="noopener">Open API <span>↗</span></a>
+                </div>
+            </div>
+            <div id="eventConflictBanner" class="conflict-banner" hidden></div>
+            <div class="student-table-wrap">
+                <table class="students-table">
+                    <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Venue</th>
+                        <th>Category</th>
+                        <th>Organizer</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="eventsTableBody">
+                        <tr><td colspan="6" class="empty-state">Loading events…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+<script>
+    function showEventConflict(message, isConflict) {
+        const banner = document.getElementById('eventConflictBanner');
+        banner.textContent = message;
+        banner.hidden = false;
+        banner.style.background = isConflict ? '#ffe3e3' : '#e8f9ed';
+        banner.style.color = isConflict ? '#8a1d1d' : '#174d2a';
+        banner.style.borderColor = isConflict ? '#d58a8a' : '#8ec9a6';
+    }
+
+    async function registerForEvent(eventId) {
+        try {
+            const response = await fetch('/api/events/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: eventId,
+                    studentId: 'student-001'
+                })
+            });
+
+            const payload = await response.json();
+            const hasConflict = Boolean(payload && payload.conflict);
+            showEventConflict(
+                hasConflict
+                    ? 'Conflict alert: this registration overlaps with another event on your schedule.'
+                    : 'Registered successfully for this event.',
+                hasConflict
+            );
+        } catch (error) {
+            showEventConflict('Unable to register for the event right now.', true);
+        }
+    }
+
+    async function loadEvents() {
+        const body = document.getElementById('eventsTableBody');
+        try {
+            const response = await fetch('/api/events');
+            if (!response.ok) throw new Error('Request failed');
+            const events = await response.json();
+            if (!events || events.length === 0) {
+                body.innerHTML = '<tr><td colspan="6" class="empty-state">No events found.</td></tr>';
+                return;
+            }
+            body.innerHTML = events.map(event => `
+                <tr>
+                    <td><strong>${event.title || 'Untitled event'}</strong></td>
+                    <td>${event.eventDate ? new Date(event.eventDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</td>
+                    <td>${event.venue || '—'}</td>
+                    <td>${event.category || '—'}</td>
+                    <td>${event.organizer || '—'}</td>
+                    <td><button class="button button-dark register-button" type="button" data-event-id="${event.id || event.eventId || ''}">Register</button></td>
+                </tr>
+            `).join('');
+
+            document.querySelectorAll('.register-button').forEach(button => {
+                button.addEventListener('click', function () {
+                    const eventId = this.getAttribute('data-event-id');
+                    if (eventId) {
+                        registerForEvent(eventId);
+                    }
+                });
+            });
+        } catch (error) {
+            body.innerHTML = '<tr><td colspan="6" class="empty-state">Unable to load events right now.</td></tr>';
+        }
+    }
+    document.getElementById('refreshEvents').addEventListener('click', loadEvents);
+    loadEvents();
+</script>
+</body>
+</html>
