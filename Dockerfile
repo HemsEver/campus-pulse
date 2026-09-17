@@ -1,21 +1,14 @@
 # Build Stage
-FROM eclipse-temurin:17-jdk AS build
+FROM maven:3.9-eclipse-temurin-24 AS build
 WORKDIR /app
 
-# Copy wrapper and pom first
-COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
-
-# Grant execution permission and download dependencies
-RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline
-
-# Copy source code and build
+COPY pom.xml ./
 COPY src ./src
-RUN ./mvnw clean package -DskipTests
+
+RUN mvn clean package -DskipTests
 
 # Runtime Stage
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:24-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 ENV PORT=8080
