@@ -1,7 +1,17 @@
 # Build Stage
-FROM maven:3.9-eclipse-temurin-17 AS build
+FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
-COPY . .
+
+# Copy wrapper and pom first
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+
+# Grant execution permission and download dependencies
+RUN chmod +x mvnw
+RUN ./mvnw dependency:go-offline
+
+# Copy source code and build
+COPY src ./src
 RUN ./mvnw clean package -DskipTests
 
 # Runtime Stage
